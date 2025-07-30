@@ -1,0 +1,4 @@
+/.env
+/.venv
+/oswaldo_exchanger.db
+/__pycache__
