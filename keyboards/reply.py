@@ -17,7 +17,7 @@ class ReplyKeyboards:
         # Вторая строка
         builder.row(
             KeyboardButton(text="О сервисе ℹ️"),
-            KeyboardButton(text="Калькулятор валют")
+            KeyboardButton(text="Калькулятор валют"),
         )
         
         # Третья строка
@@ -28,7 +28,8 @@ class ReplyKeyboards:
         
         # Четвертая строка
         builder.row(
-            KeyboardButton(text="Друзья")
+            KeyboardButton(text="Друзья"),
+            KeyboardButton(text="📊 Мои заявки"),
         )
         
         return builder.as_markup(

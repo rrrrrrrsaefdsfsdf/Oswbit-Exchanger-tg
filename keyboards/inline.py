@@ -5,30 +5,8 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 
 class Keyboards:
-    @staticmethod
-    def main_menu() -> InlineKeyboardMarkup:
-        builder = InlineKeyboardBuilder()
-        builder.row(
-            InlineKeyboardButton(text="💱 Обмен валют", callback_data="exchange"),
-            InlineKeyboardButton(text="📊 Мои операции", callback_data="my_orders")
-        )
-        builder.row(
-            InlineKeyboardButton(text="ℹ️ Информация", callback_data="info"),
-            InlineKeyboardButton(text="🆘 Поддержка", callback_data="support")
-        )
-        return builder.as_markup()
 
-    @staticmethod
-    def exchange_type() -> InlineKeyboardMarkup:
-        builder = InlineKeyboardBuilder()
-        builder.row(
-            InlineKeyboardButton(text="₽ → ₿ (фиксированная сумма в рублях)", callback_data="exchange_rub_fixed"),
-        )
-        builder.row(
-            InlineKeyboardButton(text="₿ → ₽ (фиксированная сумма в BTC)", callback_data="exchange_btc_fixed"),
-        )
-        builder.row(InlineKeyboardButton(text="◀️ Назад", callback_data="back_to_main"))
-        return builder.as_markup()
+
 
     @staticmethod
     def payment_method() -> InlineKeyboardMarkup:

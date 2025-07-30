@@ -1,3 +1,4 @@
+from asyncio.log import logger
 import aiosqlite
 import json
 from datetime import datetime
@@ -183,15 +184,25 @@ class Database:
             await db.commit()
 
     async def update_order(self, order_id: int, **kwargs):
+        """Обновление заказа"""
         if not kwargs:
             return
         
-        fields = ', '.join([f"{key} = ?" for key in kwargs.keys()])
-        values = list(kwargs.values()) + [order_id]
+        # Добавляем personal_id в список возможных полей для обновления
+        allowed_fields = ['onlypays_id', 'status', 'requisites', 'personal_id']
         
-        async with aiosqlite.connect(self.db_path) as db:
-            await db.execute(f'UPDATE orders SET {fields} WHERE id = ?', values)
-            await db.commit()
+        set_clause = []
+        values = []
+        
+        for field, value in kwargs.items():
+            if field in allowed_fields:
+                set_clause.append(f"{field} = ?")
+                values.append(value)
+        
+        if set_clause:
+            values.append(order_id)
+            query = f"UPDATE orders SET {', '.join(set_clause)} WHERE id = ?"
+            await self.execute_query(query, tuple(values))
 
     async def get_user_orders(self, user_id: int, limit: int = 10) -> List[Dict]:
         async with aiosqlite.connect(self.db_path) as db:
@@ -260,6 +271,7 @@ class Database:
                     (user_id,)
                 ) as cursor:
                     count = (await cursor.fetchone())[0]
+                    logger.info(f"Referral bonus for user {user_id}")
                 
                 await db.execute(
                     'UPDATE users SET referral_count = ? WHERE user_id = ?',
@@ -270,26 +282,32 @@ class Database:
             except:
                 return 0
 
-    async def get_referral_stats(self, user_id: int) -> dict:
-        async with aiosqlite.connect(self.db_path) as db:
-            try:
-                async with db.execute(
-                    'SELECT COUNT(*) FROM users WHERE referred_by = ?', 
-                    (user_id,)
-                ) as cursor:
-                    referral_count = (await cursor.fetchone())[0]
-                
-                referral_balance = referral_count * 100
-                
-                return {
-                    'referral_count': referral_count,
-                    'referral_balance': referral_balance
-                }
-            except:
-                return {
-                    'referral_count': 0,
-                    'referral_balance': 0
-                }
+    async def get_referral_stats(self, user_id: int):
+        """Получение статистики рефералов"""
+        try:
+            # Получаем количество рефералов
+            query1 = "SELECT COUNT(*) as count FROM users WHERE referred_by = ?"
+            result1 = await self.execute_query(query1, (user_id,))
+            
+            # execute_query возвращает список, берем первый элемент
+            referral_count = 0
+            if result1 and len(result1) > 0:
+                referral_count = result1[0]['count'] if 'count' in result1[0] else result1[0][0]
+            
+            # Получаем баланс рефералов (можно добавить таблицу для этого)
+            # Пока возвращаем 0, позже можно добавить логику расчета
+            referral_balance = 0
+            
+            return {
+                'referral_count': referral_count,
+                'referral_balance': referral_balance
+            }
+        except Exception as e:
+            logger.error(f"Get referral stats error: {e}")
+            return {
+                'referral_count': 0,
+                'referral_balance': 0
+            }
 
     async def add_referral_bonus(self, user_id: int, amount: float):
         async with aiosqlite.connect(self.db_path) as db:

@@ -8,7 +8,7 @@ from aiogram.enums import ParseMode
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 from config import config
 from database.models import Database
-from handlers import user, admin, operator, calculator, exchange
+from handlers import user, admin, operator, calculator
 from middlewares.chat_type import PrivateChatMiddleware
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -21,7 +21,6 @@ dp.include_router(admin.router)
 dp.include_router(user.router)
 dp.include_router(operator.router)
 dp.include_router(calculator.router)
-dp.include_router(exchange.router)
 
 dp.message.middleware(PrivateChatMiddleware())
 dp.callback_query.middleware(PrivateChatMiddleware())
@@ -47,21 +46,7 @@ def create_app() -> web.Application:
     setup_application(app, dp, bot=bot)
     return app
 
-async def run_webhook():
-    logger.info("Starting bot in webhook mode")
-    await on_startup()
-    try:
-        app = create_app()
-        runner = web.AppRunner(app)
-        await runner.setup()
-        site = web.TCPSite(runner, host=config.WEBAPP_HOST, port=config.WEBAPP_PORT)
-        await site.start()
-        logger.info(f"Server started on {config.WEBAPP_HOST}:{config.WEBAPP_PORT}")
-        await asyncio.Event().wait()
-    except KeyboardInterrupt:
-        logger.info("Server stopped by user")
-    finally:
-        await on_shutdown()
+
 
 async def run_polling():
     logger.info("Starting bot in polling mode")
@@ -76,10 +61,10 @@ async def run_polling():
 
 async def main():
     mode = os.getenv('BOT_MODE', 'polling').lower()
-    if mode == 'webhook':
-        await run_webhook()
-    else:
-        await run_polling()
+    # if mode == 'webhook':
+    #     await run_webhook()
+    # else:
+    await run_polling()
 
 if __name__ == "__main__":
     asyncio.run(main())
