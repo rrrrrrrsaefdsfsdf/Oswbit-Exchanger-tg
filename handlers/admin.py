@@ -88,7 +88,7 @@ def create_main_admin_panel():
 def create_settings_panel():
     builder = InlineKeyboardBuilder()
     builder.row(
-        InlineKeyboardButton(text="💸 Изменить процент", callback_data="admin_change_percentage"),
+        InlineKeyboardButton(text="💸 Изменить комиссию", callback_data="admin_change_percentage"),
         InlineKeyboardButton(text="🤖 Капча", callback_data="admin_toggle_captcha")
     )
     builder.row(
@@ -115,7 +115,7 @@ def create_users_panel():
         InlineKeyboardButton(text="✅ Разблокировать", callback_data="admin_unblock_user")
     )
     builder.row(
-        InlineKeyboardButton(text="◀️ Назад", callback_data="admin_main_panel")
+        InlineKeyboardButton(text="◶️ Назад", callback_data="admin_main_panel")
     )
     return builder
 
@@ -133,7 +133,7 @@ def create_staff_panel():
         InlineKeyboardButton(text="📋 Список персонала", callback_data="admin_staff_list")
     )
     builder.row(
-        InlineKeyboardButton(text="◀️ Назад", callback_data="admin_main_panel")
+        InlineKeyboardButton(text="◶️ Назад", callback_data="admin_main_panel")
     )
     return builder
 
@@ -152,7 +152,7 @@ def create_orders_panel():
         InlineKeyboardButton(text="⚠️ Проблемные", callback_data="admin_problem_orders")
     )
     builder.row(
-        InlineKeyboardButton(text="◀️ Назад", callback_data="admin_main_panel")
+        InlineKeyboardButton(text="◶️ Назад", callback_data="admin_main_panel")
     )
     return builder
 
@@ -167,7 +167,7 @@ def create_system_panel():
         InlineKeyboardButton(text="🔄 Обновить статистику", callback_data="admin_refresh_stats")
     )
     builder.row(
-        InlineKeyboardButton(text="◀️ Назад", callback_data="admin_main_panel")
+        InlineKeyboardButton(text="◶️ Назад", callback_data="admin_main_panel")
     )
     return builder
 
@@ -182,7 +182,7 @@ def create_broadcast_panel():
         InlineKeyboardButton(text="🎯 С операциями", callback_data="admin_broadcast_traders")
     )
     builder.row(
-        InlineKeyboardButton(text="◀️ Назад", callback_data="admin_main_panel")
+        InlineKeyboardButton(text="◶️ Назад", callback_data="admin_main_panel")
     )
     return builder
 
@@ -243,7 +243,7 @@ async def admin_callback_handler(callback: CallbackQuery, state: FSMContext):
             builder = InlineKeyboardBuilder()
             builder.row(
                 InlineKeyboardButton(text="🔄 Обновить", callback_data="admin_stats"),
-                InlineKeyboardButton(text="◀️ Назад", callback_data="admin_main_panel")
+                InlineKeyboardButton(text="◶️ Назад", callback_data="admin_main_panel")
             )
             await callback.message.edit_text(text, reply_markup=builder.as_markup(), parse_mode="HTML")
 
@@ -266,12 +266,12 @@ async def admin_callback_handler(callback: CallbackQuery, state: FSMContext):
             builder = InlineKeyboardBuilder()
             builder.row(
                 InlineKeyboardButton(text="🔄 Обновить", callback_data="admin_balance"),
-                InlineKeyboardButton(text="◀️ Назад", callback_data="admin_main_panel")
+                InlineKeyboardButton(text="◶️ Назад", callback_data="admin_main_panel")
             )
             await callback.message.edit_text(text, reply_markup=builder.as_markup(), parse_mode="HTML")
 
         elif action == "settings":
-            current_percentage = await db.get_setting("admin_percentage", config.ADMIN_PERCENTAGE)
+            commission_percentage = await db.get_setting("commission_percentage", float(os.getenv('COMMISSION_PERCENT', '20.0')))
             captcha_status = normalize_bool(await db.get_setting("captcha_enabled", config.CAPTCHA_ENABLED))
             min_amount = await db.get_setting("min_amount", config.MIN_AMOUNT)
             max_amount = await db.get_setting("max_amount", config.MAX_AMOUNT)
@@ -280,7 +280,7 @@ async def admin_callback_handler(callback: CallbackQuery, state: FSMContext):
             
             text = (
                 f"⚙️ <b>Настройки системы</b>\n\n"
-                f"💸 Процент администратора: {current_percentage}%\n"
+                f"💸 Комиссия сервиса: {commission_percentage}%\n"
                 f"🤖 Капча: {status_text}\n"
                 f"💰 Лимиты: {min_amount:,} - {max_amount:,} ₽"
             )
@@ -364,7 +364,7 @@ async def admin_callback_handler(callback: CallbackQuery, state: FSMContext):
                 builder = InlineKeyboardBuilder()
                 builder.row(
                     InlineKeyboardButton(text="🔄 Обновить", callback_data="admin_system_info"),
-                    InlineKeyboardButton(text="◀️ Назад", callback_data="admin_system_menu")
+                    InlineKeyboardButton(text="◶️ Назад", callback_data="admin_system_menu")
                 )
                 await callback.message.edit_text(text, reply_markup=builder.as_markup(), parse_mode="HTML")
             except Exception as e:
@@ -387,7 +387,7 @@ async def admin_callback_handler(callback: CallbackQuery, state: FSMContext):
                     text = "📋 <b>Логи</b>\n\n❌ Лог-файлы не найдены"
                 
                 builder = InlineKeyboardBuilder()
-                builder.row(InlineKeyboardButton(text="◀️ Назад", callback_data="admin_system_menu"))
+                builder.row(InlineKeyboardButton(text="◶️ Назад", callback_data="admin_system_menu"))
                 await callback.message.edit_text(text, reply_markup=builder.as_markup(), parse_mode="HTML")
             except Exception as e:
                 await callback.answer(f"❌ Ошибка: {e}", show_alert=True)
@@ -425,7 +425,7 @@ async def admin_callback_handler(callback: CallbackQuery, state: FSMContext):
                     text = "📋 <b>Заявки</b>\n\n❌ Заявки не найдены"
                 
                 builder = InlineKeyboardBuilder()
-                builder.row(InlineKeyboardButton(text="◀️ Назад", callback_data="admin_orders_menu"))
+                builder.row(InlineKeyboardButton(text="◶️ Назад", callback_data="admin_orders_menu"))
                 await callback.message.edit_text(text, reply_markup=builder.as_markup(), parse_mode="HTML")
             except Exception as e:
                 await callback.answer(f"❌ Ошибка: {e}", show_alert=True)
@@ -452,7 +452,7 @@ async def admin_callback_handler(callback: CallbackQuery, state: FSMContext):
                     text = "⏳ <b>Ожидающие заявки</b>\n\n✅ Нет ожидающих заявок"
                 
                 builder = InlineKeyboardBuilder()
-                builder.row(InlineKeyboardButton(text="◀️ Назад", callback_data="admin_orders_menu"))
+                builder.row(InlineKeyboardButton(text="◶️ Назад", callback_data="admin_orders_menu"))
                 await callback.message.edit_text(text, reply_markup=builder.as_markup(), parse_mode="HTML")
             except Exception as e:
                 await callback.answer(f"❌ Ошибка: {e}", show_alert=True)
@@ -476,7 +476,7 @@ async def admin_callback_handler(callback: CallbackQuery, state: FSMContext):
                     text = "✅ <b>Завершенные заявки</b>\n\n❌ Завершенных заявок нет"
                 
                 builder = InlineKeyboardBuilder()
-                builder.row(InlineKeyboardButton(text="◀️ Назад", callback_data="admin_orders_menu"))
+                builder.row(InlineKeyboardButton(text="◶️ Назад", callback_data="admin_orders_menu"))
                 await callback.message.edit_text(text, reply_markup=builder.as_markup(), parse_mode="HTML")
             except Exception as e:
                 await callback.answer(f"❌ Ошибка: {e}", show_alert=True)
@@ -500,7 +500,7 @@ async def admin_callback_handler(callback: CallbackQuery, state: FSMContext):
                     text = "❌ <b>Отмененные заявки</b>\n\n✅ Отмененных заявок нет"
                 
                 builder = InlineKeyboardBuilder()
-                builder.row(InlineKeyboardButton(text="◀️ Назад", callback_data="admin_orders_menu"))
+                builder.row(InlineKeyboardButton(text="◶️ Назад", callback_data="admin_orders_menu"))
                 await callback.message.edit_text(text, reply_markup=builder.as_markup(), parse_mode="HTML")
             except Exception as e:
                 await callback.answer(f"❌ Ошибка: {e}", show_alert=True)
@@ -524,7 +524,7 @@ async def admin_callback_handler(callback: CallbackQuery, state: FSMContext):
                     text = "⚠️ <b>Проблемные заявки</b>\n\n✅ Проблемных заявок нет"
                 
                 builder = InlineKeyboardBuilder()
-                builder.row(InlineKeyboardButton(text="◀️ Назад", callback_data="admin_orders_menu"))
+                builder.row(InlineKeyboardButton(text="◶️ Назад", callback_data="admin_orders_menu"))
                 await callback.message.edit_text(text, reply_markup=builder.as_markup(), parse_mode="HTML")
             except Exception as e:
                 await callback.answer(f"❌ Ошибка: {e}", show_alert=True)
@@ -611,63 +611,110 @@ async def handle_settings_and_management(callback: CallbackQuery, state: FSMCont
         status_text = "✅ Включена" if new_status else "❌ Отключена"
         await callback.answer(f"Капча: {status_text}")
         await admin_callback_handler(callback.model_copy(update={"data": "admin_settings"}), state)
-
+    
     elif action == "change_percentage":
+        commission_percentage = await db.get_setting("commission_percentage", float(os.getenv('COMMISSION_PERCENT', '20.0')))
+        
+        builder = InlineKeyboardBuilder()
+        builder.row(
+            InlineKeyboardButton(text="❌ Отменить", callback_data="admin_settings")
+        )
+        
         await callback.message.edit_text(
-            "💸 <b>Изменение процента администратора</b>\n\n"
-            "Введите новый процент (от 0 до 50):\n"
-            "Например: 5.5",
+            f"💸 <b>Изменение комиссии сервиса</b>\n\n"
+            f"📊 Текущая комиссия: <b>{commission_percentage}%</b>\n\n"
+            f"Введите новую комиссию (от 0 до 50):\n"
+            f"Например: 16.67",
+            reply_markup=builder.as_markup(),
             parse_mode="HTML"
         )
         await state.update_data(action="change_percentage")
         await state.set_state(AdminStates.waiting_for_percentage)
-
+    
     elif action == "change_limits":
+        min_amount = await db.get_setting("min_amount", config.MIN_AMOUNT)
+        max_amount = await db.get_setting("max_amount", config.MAX_AMOUNT)
+        
+        builder = InlineKeyboardBuilder()
+        builder.row(
+            InlineKeyboardButton(text="❌ Отменить", callback_data="admin_settings")
+        )
+        
         await callback.message.edit_text(
-            "💰 <b>Изменение лимитов</b>\n\n"
-            "Введите новые лимиты через пробел:\n"
-            "Например: 1000 500000",
+            f"💰 <b>Изменение лимитов</b>\n\n"
+            f"📊 Текущие лимиты: <b>{min_amount:,} - {max_amount:,} ₽</b>\n\n"
+            f"Введите новые лимиты через пробел:\n"
+            f"Например: 1000 500000",
+            reply_markup=builder.as_markup(),
             parse_mode="HTML"
         )
         await state.update_data(action="change_limits")
         await state.set_state(AdminStates.waiting_for_limits)
-
+    
     elif action == "change_welcome":
+        current_welcome = await db.get_setting("welcome_message", "Не установлено")
+        
+        builder = InlineKeyboardBuilder()
+        builder.row(
+            InlineKeyboardButton(text="❌ Отменить", callback_data="admin_settings")
+        )
+        
         await callback.message.edit_text(
-            "📝 <b>Изменение приветственного сообщения</b>\n\n"
-            "Отправьте новое приветственное сообщение:",
+            f"📝 <b>Изменение приветственного сообщения</b>\n\n"
+            f"📊 Текущее сообщение:\n<i>{current_welcome[:200]}{'...' if len(current_welcome) > 200 else ''}</i>\n\n"
+            f"Отправьте новое приветственное сообщение:",
+            reply_markup=builder.as_markup(),
             parse_mode="HTML"
         )
         await state.update_data(action="change_welcome")
         await state.set_state(AdminStates.waiting_for_welcome_message)
-
+    
     elif action in ["find_user", "message_user", "block_user", "unblock_user",
                     "add_admin", "remove_admin", "add_operator", "remove_operator"]:
+        builder = InlineKeyboardBuilder()
+        
+        if action in ["find_user", "message_user", "block_user", "unblock_user"]:
+            cancel_callback = "admin_users_menu"
+        else:
+            cancel_callback = "admin_staff_menu"
+        
+        builder.row(
+            InlineKeyboardButton(text="❌ Отменить", callback_data=cancel_callback)
+        )
+        
         await callback.message.edit_text(
             f"👤 <b>{get_action_title(action)}</b>\n\n"
-            "Введите ID или @username пользователя:",
+            f"Введите ID или @username пользователя:",
+            reply_markup=builder.as_markup(),
             parse_mode="HTML"
         )
         await state.update_data(action=action)
         await state.set_state(AdminStates.waiting_for_user_id)
-
+    
     elif action == "staff_list":
         await show_staff_list(callback)
-
+    
     elif action == "broadcast_all":
         users = await db.get_all_users()
+        
+        builder = InlineKeyboardBuilder()
+        builder.row(
+            InlineKeyboardButton(text="❌ Отменить", callback_data="admin_broadcast_menu")
+        )
+        
         await callback.message.edit_text(
             f"📤 <b>Рассылка всем пользователям</b>\n\n"
             f"Найдено пользователей: {len(users)}\n\n"
-            "Отправьте сообщение для рассылки:",
+            f"Отправьте сообщение для рассылки:",
+            reply_markup=builder.as_markup(),
             parse_mode="HTML"
         )
         await state.update_data(action="broadcast_all", target_users=users)
         await state.set_state(AdminStates.waiting_for_broadcast_message)
-
+    
     elif action == "user_stats":
         await show_detailed_user_stats(callback)
-
+    
     elif action == "recent_users":
         await show_recent_users(callback)
 
@@ -712,7 +759,7 @@ async def show_staff_list(callback: CallbackQuery):
         text += "\nНет дополнительного персонала"
     
     builder = InlineKeyboardBuilder()
-    builder.row(InlineKeyboardButton(text="◀️ Назад", callback_data="admin_staff_menu"))
+    builder.row(InlineKeyboardButton(text="◶️ Назад", callback_data="admin_staff_menu"))
     await callback.message.edit_text(text, reply_markup=builder.as_markup(), parse_mode="HTML")
 
 async def show_detailed_user_stats(callback: CallbackQuery):
@@ -744,7 +791,7 @@ async def show_detailed_user_stats(callback: CallbackQuery):
         builder = InlineKeyboardBuilder()
         builder.row(
             InlineKeyboardButton(text="🔄 Обновить", callback_data="admin_user_stats"),
-            InlineKeyboardButton(text="◀️ Назад", callback_data="admin_users_menu")
+            InlineKeyboardButton(text="◶️ Назад", callback_data="admin_users_menu")
         )
         await callback.message.edit_text(text, reply_markup=builder.as_markup(), parse_mode="HTML")
     except Exception as e:
@@ -767,7 +814,7 @@ async def show_recent_users(callback: CallbackQuery):
                 text += f"🆔 {user_id} | @{username or 'нет'}\n{first_name} | {reg_date[:16]} | {operations or 0} операций\n\n"
         
         builder = InlineKeyboardBuilder()
-        builder.row(InlineKeyboardButton(text="◀️ Назад", callback_data="admin_users_menu"))
+        builder.row(InlineKeyboardButton(text="◶️ Назад", callback_data="admin_users_menu"))
         await callback.message.edit_text(text, reply_markup=builder.as_markup(), parse_mode="HTML")
     except Exception as e:
         await callback.answer(f"❌ Ошибка: {e}", show_alert=True)
@@ -777,11 +824,11 @@ async def process_percentage_change(message: Message, state: FSMContext):
     try:
         percentage = float(message.text)
         if not 0 <= percentage <= 50:
-            await message.answer("❌ Процент должен быть от 0 до 50")
+            await message.answer("❌ Комиссия должна быть от 0 до 50")
             return
         
-        await db.set_setting("admin_percentage", percentage)
-        await message.answer(f"✅ Процент администратора изменен на {percentage}%")
+        await db.set_setting("commission_percentage", percentage)
+        await message.answer(f"✅ Комиссия сервиса изменена на {percentage}%")
         
         builder = create_main_admin_panel()
         await message.answer("👑 <b>Панель администратора</b>", reply_markup=builder.as_markup(), parse_mode="HTML")
@@ -834,7 +881,7 @@ async def process_order_search(message: Message, state: FSMContext):
         async with aiosqlite.connect(db.db_path) as database:
             async with database.execute('''
                 SELECT id, user_id, amount_rub, amount_btc, btc_address, total_amount, status, 
-                       created_at, personal_id, payment_type, rate, processing_fee, admin_fee
+                       created_at, personal_id, payment_type, rate
                 FROM orders 
                 WHERE id = ? OR personal_id = ?
             ''', (order_id, order_id)) as cursor:
@@ -845,7 +892,7 @@ async def process_order_search(message: Message, state: FSMContext):
             return
         
         (internal_id, user_id, amount_rub, amount_btc, btc_address, total_amount, 
-         status, created_at, personal_id, payment_type, rate, processing_fee, admin_fee) = order
+         status, created_at, personal_id, payment_type, rate) = order
         
         display_id = personal_id or internal_id
         status_text = {
@@ -856,6 +903,9 @@ async def process_order_search(message: Message, state: FSMContext):
             "problem": "⚠️ Проблемная"
         }.get(status, status)
         
+        # Calculate commission as the difference between total_amount and amount_rub
+        commission = total_amount - amount_rub
+        
         text = (
             f"🔍 <b>Заявка #{display_id}</b>\n\n"
             f"🆔 Внутренний ID: {internal_id}\n"
@@ -863,9 +913,8 @@ async def process_order_search(message: Message, state: FSMContext):
             f"💰 Сумма: {amount_rub:,.0f} ₽\n"
             f"₿ Bitcoin: {amount_btc:.8f} BTC\n"
             f"💸 К оплате: {total_amount:,.0f} ₽\n"
+            f"🏛 Комиссия сервиса: {commission:,.0f} ₽\n"
             f"💱 Курс: {rate:,.0f} ₽\n"
-            f"💳 Комиссия процессинга: {processing_fee:,.0f} ₽\n"
-            f"🏛 Комиссия сервиса: {admin_fee:,.0f} ₽\n"
             f"📱 Тип оплаты: {payment_type or 'Не указан'}\n"
             f"📊 Статус: {status_text}\n"
             f"📅 Создана: {created_at}\n\n"
@@ -1166,7 +1215,6 @@ async def get_log_command(message: Message):
         with open(filename, 'r', encoding='utf-8') as f:
             content = f.read()
         
-        # Берем последие 4000 символов (лимит Telegram)
         if len(content) > 4000:
             content = "...\n" + content[-4000:]
         

@@ -24,6 +24,12 @@ from handlers.operator import (
 
 
 
+
+
+
+
+
+
 logger = logging.getLogger(__name__)
 router = Router()
 
@@ -695,6 +701,12 @@ async def manual_amount_input(message: Message, state: FSMContext):
     except (ValueError, TypeError):
         await message.answer("❌ Введите корректное число")
 
+
+
+
+
+
+
 async def process_amount_and_show_calculation(callback: CallbackQuery, state: FSMContext, 
                                             crypto: str, direction: str, amount: float):
     btc_rate = await BitcoinAPI.get_btc_rate()
@@ -706,10 +718,9 @@ async def process_amount_and_show_calculation(callback: CallbackQuery, state: FS
         crypto_amount = amount
         rub_amount = crypto_amount * btc_rate
     
-    admin_percentage = await db.get_setting("admin_percentage", config.ADMIN_PERCENTAGE)
-    processing_fee = rub_amount * 0.10
-    admin_fee = (rub_amount + processing_fee) * (admin_percentage / 100)
-    total_amount = rub_amount + processing_fee + admin_fee
+    COMMISSION_PERCENT = await db.get_commission_percentage()
+    # Новая логика расчета с единой комиссией
+    total_amount = rub_amount / (1 - COMMISSION_PERCENT / 100)
     
     await state.update_data(
         crypto=crypto,
@@ -717,8 +728,6 @@ async def process_amount_and_show_calculation(callback: CallbackQuery, state: FS
         rub_amount=rub_amount,
         crypto_amount=crypto_amount,
         rate=btc_rate,
-        processing_fee=processing_fee,
-        admin_fee=admin_fee,
         total_amount=total_amount
     )
     
@@ -729,8 +738,6 @@ async def process_amount_and_show_calculation(callback: CallbackQuery, state: FS
         f"💱 Курс: {btc_rate:,.0f} ₽\n"
         f"💰 Сумма: {rub_amount:,.0f} ₽\n"
         f"₿ Получите: {crypto_amount:.8f} BTC\n\n"
-        f"💳 Комиссия процессинга: {processing_fee:,.0f} ₽\n"
-        f"🏛 Комиссия сервиса: {admin_fee:,.0f} ₽\n"
         f"💸 <b>Итого: {total_amount:,.0f} ₽</b>\n\n"
         f"Выберите способ {'оплаты' if direction == 'rub_to_crypto' else 'получения'}:"
     )
@@ -743,6 +750,7 @@ async def process_amount_and_show_calculation(callback: CallbackQuery, state: FS
         parse_mode="HTML"
     )
 
+
 async def process_amount_and_show_calculation_for_message(message: Message, state: FSMContext,
                                                         crypto: str, direction: str, amount: float):
     btc_rate = await BitcoinAPI.get_btc_rate()
@@ -753,11 +761,9 @@ async def process_amount_and_show_calculation_for_message(message: Message, stat
     else:
         crypto_amount = amount
         rub_amount = crypto_amount * btc_rate
-    
-    admin_percentage = await db.get_setting("admin_percentage", config.ADMIN_PERCENTAGE)
-    processing_fee = rub_amount * 0.10
-    admin_fee = (rub_amount + processing_fee) * (admin_percentage / 100)
-    total_amount = rub_amount + processing_fee + admin_fee
+    COMMISSION_PERCENT = await db.get_commission_percentage()
+    # Новая логика расчета с единой комиссией
+    total_amount = rub_amount / (1 - COMMISSION_PERCENT / 100)
     
     await state.update_data(
         crypto=crypto,
@@ -765,8 +771,6 @@ async def process_amount_and_show_calculation_for_message(message: Message, stat
         rub_amount=rub_amount,
         crypto_amount=crypto_amount,
         rate=btc_rate,
-        processing_fee=processing_fee,
-        admin_fee=admin_fee,
         total_amount=total_amount
     )
     
@@ -777,8 +781,6 @@ async def process_amount_and_show_calculation_for_message(message: Message, stat
         f"💱 Курс: {btc_rate:,.0f} ₽\n"
         f"💰 Сумма: {rub_amount:,.0f} ₽\n"
         f"₿ Получите: {crypto_amount:.8f} BTC\n\n"
-        f"💳 Комиссия процессинга: {processing_fee:,.0f} ₽\n"
-        f"🏛 Комиссия сервиса: {admin_fee:,.0f} ₽\n"
         f"💸 <b>Итого: {total_amount:,.0f} ₽</b>\n\n"
         f"Выберите способ {'оплаты' if direction == 'rub_to_crypto' else 'получения'}:"
     )
@@ -790,6 +792,14 @@ async def process_amount_and_show_calculation_for_message(message: Message, stat
         ),
         parse_mode="HTML"
     )
+
+
+
+
+
+
+
+
 
 @router.callback_query(F.data.startswith("payment_"))
 async def payment_method_selected(callback: CallbackQuery, state: FSMContext):
@@ -832,6 +842,7 @@ async def payment_method_selected(callback: CallbackQuery, state: FSMContext):
     await state.set_state(ExchangeStates.waiting_for_address)
 
 @router.message(ExchangeStates.waiting_for_btc_address)
+
 async def btc_address_handler(message: Message, state: FSMContext):
     if message.text == "◀️ Главное меню":
         await state.clear()
@@ -859,20 +870,15 @@ async def btc_address_handler(message: Message, state: FSMContext):
         btc_amount = data['btc_amount']
         rub_amount = btc_amount * btc_rate
     
-    processing_percentage = 10.0
-    admin_percentage = await db.get_setting("admin_percentage", config.ADMIN_PERCENTAGE)
-    
-    processing_fee, admin_fee, total_amount = BitcoinAPI.calculate_fees(
-        rub_amount, processing_percentage, admin_percentage
-    )
+    COMMISSION_PERCENT = await db.get_commission_percentage()
+    # Новая логика расчета с единой комиссией
+    total_amount = rub_amount / (1 - COMMISSION_PERCENT / 100)
     
     text = (
         f"📊 <b>Предварительный расчет:</b>\n\n"
         f"💱 Курс BTC: {btc_rate:,.0f} ₽\n"
         f"💰 Сумма к обмену: {rub_amount:,.0f} ₽\n"
         f"₿ Получите Bitcoin: {btc_amount:.8f} BTC\n\n"
-        f"💳 Комиссия процессинга: {processing_fee:,.0f} ₽\n"
-        f"🏛 Комиссия сервиса: {admin_fee:,.0f} ₽\n"
         f"💸 <b>К оплате: {total_amount:,.0f} ₽</b>\n\n"
         f"₿ Bitcoin адрес:\n<code>{btc_address}</code>\n\n"
         f"Выберите способ оплаты:"
@@ -883,12 +889,14 @@ async def btc_address_handler(message: Message, state: FSMContext):
         rub_amount=rub_amount,
         btc_amount=btc_amount,
         btc_rate=btc_rate,
-        processing_fee=processing_fee,
-        admin_fee=admin_fee,
         total_amount=total_amount
     )
     
     await message.answer(text, reply_markup=ReplyKeyboards.payment_methods(), parse_mode="HTML")
+
+
+
+
 
 @router.message(ExchangeStates.waiting_for_address)
 async def address_input_handler(message: Message, state: FSMContext):
@@ -922,25 +930,25 @@ async def create_exchange_order(user_id: int, state: FSMContext) -> int:
         amount_btc=data["crypto_amount"],
         btc_address=data["address"],
         rate=data["rate"],
-        processing_fee=data["processing_fee"],
-        admin_fee=data["admin_fee"],
         total_amount=data["total_amount"],
         payment_type=data["payment_type"]
     )
     
     return order_id
 
+
+
+
 async def show_order_confirmation(message: Message, state: FSMContext, order_id: int):
     data = await state.get_data()
     
-    # Получаем заявку из БД для получения personal_id
     order = await db.get_order(order_id)
     display_id = order.get('personal_id', order_id) if order else order_id
     
     operation_text = "Покупка" if data["direction"] == "rub_to_crypto" else "Продажа"
     
     text = (
-        f"✅ <b>Заявка создана!</b>\n\n"  # Используем display_id
+        f"✅ <b>Заявка создана!</b>\n\n"
         f"📋 <b>{operation_text} Bitcoin</b>\n"
         f"💰 Сумма: {data['rub_amount']:,.0f} ₽\n"
         f"₿ Количество: {data['crypto_amount']:.8f} BTC\n"
@@ -955,8 +963,12 @@ async def show_order_confirmation(message: Message, state: FSMContext, order_id:
         parse_mode="HTML"
     )
     
-    
     await state.clear()
+
+
+
+
+
 
 
 @router.callback_query(F.data.startswith(("confirm_order_", "cancel_order_")))
@@ -1050,25 +1062,32 @@ async def order_confirmation_handler(callback: CallbackQuery, state: FSMContext)
         reply_markup=ReplyKeyboards.main_menu()
     )
 
+
+
 @router.message(F.text.in_(["💳 Банковская карта", "📱 СБП"]))
 async def payment_method_handler(message: Message, state: FSMContext):
     payment_type = "card" if "карта" in message.text else "sbp"
     data = await state.get_data()
+    COMMISSION_PERCENT = await db.get_commission_percentage()
+    # Пересчитываем total_amount с учетом единой комиссии
+    rub_amount = data['rub_amount']
+    total_amount = rub_amount / (1 - COMMISSION_PERCENT / 100)
+    btc_amount = data['btc_amount']
+    btc_rate = data['btc_rate']
     
+    # Создаем заявку без processing_fee и admin_fee
     order_id = await db.create_order(
         user_id=message.from_user.id,
-        amount_rub=data['rub_amount'],
-        amount_btc=data['btc_amount'],
+        amount_rub=rub_amount,
+        amount_btc=btc_amount,
         btc_address=data.get('btc_address', data.get('address', '')),
-        rate=data['btc_rate'],
-        processing_fee=data['processing_fee'],
-        admin_fee=data['admin_fee'],
-        total_amount=data['total_amount'],
+        rate=btc_rate,
+        total_amount=total_amount,
         payment_type=payment_type
     )
     
     api_response = await onlypays_api.create_order(
-        amount=int(data['total_amount']),
+        amount=int(total_amount),
         payment_type=payment_type,
         personal_id=str(order_id)
     )
@@ -1101,13 +1120,15 @@ async def payment_method_handler(message: Message, state: FSMContext):
         order_id,
         onlypays_id=api_response['data']['id'],
         requisites=requisites_text,
-        personal_id=api_response['data']['id'] 
+        personal_id=api_response['data']['id']
     )
     
-    # Используем personal_id в тексте
+    # Формируем текст с итоговой суммой
     text = (
-        f"💳 <b>Заявка #{api_response['data']['id']} создана!</b>\n\n"  # Используем OnlyPays ID
-        f"💰 К оплате: <b>{data['total_amount']:,.0f} ₽</b>\n\n"
+        f"💳 <b>Заявка #{api_response['data']['id']} создана!</b>\n\n"
+        f"💰 Сумма к обмену: {rub_amount:,.0f} ₽\n"
+        f"₿ Получите: {btc_amount:.8f} BTC\n"
+        f"💸 К оплате: <b>{total_amount:,.0f} ₽</b>\n\n"
         f"📋 <b>Реквизиты для оплаты:</b>\n"
         f"{requisites_text}\n\n"
         f"⚠️ <b>Важно:</b>\n"
@@ -1124,6 +1145,13 @@ async def payment_method_handler(message: Message, state: FSMContext):
     )
     
     await state.clear()
+
+
+
+
+
+
+
 
 @router.message(F.text == "🔄 Проверить статус")
 async def check_status_handler(message: Message):
@@ -1240,8 +1268,7 @@ async def confirm_cancel_order_handler(message: Message):
 @router.message(F.text == "О сервисе ℹ️")
 async def about_handler(message: Message):
     btc_rate = await BitcoinAPI.get_btc_rate()
-    admin_percentage = await db.get_setting("admin_percentage", config.ADMIN_PERCENTAGE)
-    
+    COMMISSION_PERCENT = await db.get_commission_percentage()
     text = (
         f"👑 {config.EXCHANGE_NAME} 👑\n\n"
         f"🔷 НАШИ ПРИОРИТЕТЫ 🔷\n"
@@ -1255,8 +1282,7 @@ async def about_handler(message: Message):
         f"📣 НОВОСТНОЙ КАНАЛ ➖ {config.NEWS_CHANNEL}\n\n"
         f"━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
         f"💱 Текущий курс BTC: {btc_rate:,.0f} ₽\n"
-        f"💳 Комиссия процессинга: 10%\n"
-        f"🏛 Комиссия сервиса: {admin_percentage}%\n\n"
+        f"🏛 Комиссия сервиса: {COMMISSION_PERCENT}%\n\n"
         f"💰 Лимиты: {config.MIN_AMOUNT:,} - {config.MAX_AMOUNT:,} ₽"
     )
     

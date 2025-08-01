@@ -320,8 +320,8 @@ class InlineKeyboards:
             InlineKeyboardButton(text="❌ Отменить", callback_data=f"cancel_order_{order_id}")
         )
         
-        builder.row(
-            InlineKeyboardButton(text="🔄 Пересчитать", callback_data=f"recalc_order_{order_id}")
-        )
+        # builder.row(
+        #     InlineKeyboardButton(text="🔄 Пересчитать", callback_data=f"recalc_order_{order_id}")
+        # )
         
         return builder.as_markup()

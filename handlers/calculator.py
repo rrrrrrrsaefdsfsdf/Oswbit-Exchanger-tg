@@ -9,6 +9,12 @@ from utils.bitcoin import BitcoinAPI
 from database.models import Database
 from config import config
 
+
+
+
+
+
+
 logger = logging.getLogger(__name__)
 router = Router()
 
@@ -136,6 +142,11 @@ async def calculator_manual_amount(message: Message, state: FSMContext):
     except ValueError:
         await message.answer("❌ Введите корректное число")
 
+
+
+
+
+
 async def calculate_and_show_result(callback: CallbackQuery, state: FSMContext, pair: str, amount: float):
     from_currency, to_currency = pair.split("_")
     
@@ -148,11 +159,9 @@ async def calculate_and_show_result(callback: CallbackQuery, state: FSMContext, 
         btc_amount = amount
         rub_amount = btc_amount * btc_rate
     
-    admin_percentage = await db.get_setting("admin_percentage", config.ADMIN_PERCENTAGE)
-    
-    processing_fee = rub_amount * 0.10
-    admin_fee = (rub_amount + processing_fee) * (admin_percentage / 100)
-    total_fee = processing_fee + admin_fee
+    COMMISSION_PERCENT = await db.get_commission_percentage()
+    # Новая логика расчета с единой комиссией
+    total_amount = rub_amount / (1 - COMMISSION_PERCENT / 100)
     
     if from_currency.upper() == 'RUB':
         from_formatted = f"{rub_amount:,.0f} ₽"
@@ -165,10 +174,7 @@ async def calculate_and_show_result(callback: CallbackQuery, state: FSMContext, 
         f"🧮 <b>Результат расчета</b>\n\n"
         f"💱 <b>{from_currency.upper()} → {to_currency.upper()}</b>\n\n"
         f"📊 {from_formatted} = <b>{to_formatted}</b>\n\n"
-        f"💡 <b>Для обмена потребуется:</b>\n"
-        f"💳 Комиссия процессинга: {processing_fee:,.0f} ₽\n"
-        f"🏛 Комиссия сервиса: {admin_fee:,.0f} ₽\n"
-        f"💸 Итого доплата: <b>{total_fee:,.0f} ₽</b>"
+        f"💸 <b>Итого к оплате: {total_amount:,.0f} ₽</b>"
     )
     
     try:
@@ -186,6 +192,11 @@ async def calculate_and_show_result(callback: CallbackQuery, state: FSMContext, 
             parse_mode="HTML"
         )
 
+
+
+
+
+
 async def calculate_and_show_result_for_message(message: Message, state: FSMContext, pair: str, amount: float):
     from_currency, to_currency = pair.split("_")
     
@@ -198,11 +209,9 @@ async def calculate_and_show_result_for_message(message: Message, state: FSMCont
         btc_amount = amount
         rub_amount = btc_amount * btc_rate
     
-    admin_percentage = await db.get_setting("admin_percentage", config.ADMIN_PERCENTAGE)
-    
-    processing_fee = rub_amount * 0.10
-    admin_fee = (rub_amount + processing_fee) * (admin_percentage / 100)
-    total_fee = processing_fee + admin_fee
+    COMMISSION_PERCENT = await db.get_commission_percentage()
+    # Новая логика расчета с единой комиссией
+    total_amount = rub_amount / (1 - COMMISSION_PERCENT / 100)
     
     if from_currency.upper() == 'RUB':
         from_formatted = f"{rub_amount:,.0f} ₽"
@@ -215,10 +224,7 @@ async def calculate_and_show_result_for_message(message: Message, state: FSMCont
         f"🧮 <b>Результат расчета</b>\n\n"
         f"💱 <b>{from_currency.upper()} → {to_currency.upper()}</b>\n\n"
         f"📊 {from_formatted} = <b>{to_formatted}</b>\n\n"
-        f"💡 <b>Для обмена потребуется:</b>\n"
-        f"💳 Комиссия процессинга: {processing_fee:,.0f} ₽\n"
-        f"🏛 Комиссия сервиса: {admin_fee:,.0f} ₽\n"
-        f"💸 Итого доплата: <b>{total_fee:,.0f} ₽</b>"
+        f"💸 <b>Итого к оплате: {total_amount:,.0f} ₽</b>"
     )
     
     await message.answer(
@@ -226,6 +232,11 @@ async def calculate_and_show_result_for_message(message: Message, state: FSMCont
         reply_markup=InlineKeyboards.calculator_result(pair, str(amount)),
         parse_mode="HTML"
     )
+
+
+
+
+
 
 async def calculator_reverse(callback: CallbackQuery, state: FSMContext):
     pair = callback.data.replace("calc_reverse_", "")

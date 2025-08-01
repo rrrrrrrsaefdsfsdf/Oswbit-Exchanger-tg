@@ -33,8 +33,8 @@ class Config:
     
     # Включение капчи при регистрации
     CAPTCHA_ENABLED = os.getenv("CAPTCHA_ENABLED", "true").lower() == "true"
-    # Процент комиссии сервиса
-    ADMIN_PERCENTAGE = float(os.getenv("ADMIN_PERCENTAGE", 5.0))
+
+
     # Минимальная сумма обмена
     MIN_AMOUNT = int(os.getenv("MIN_AMOUNT", 1000))
     # Максимальная сумма обмена

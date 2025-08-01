@@ -4,11 +4,21 @@ import json
 from datetime import datetime
 from typing import Optional, List, Dict, Any
 import config
+import os
+
+
 
 class Database:
     def __init__(self, db_path: str):
         self.db_path = db_path
     
+
+        
+    async def get_commission_percentage(self):
+        return await self.get_setting("commission_percentage", float(os.getenv('COMMISSION_PERCENT', '20.0')))
+
+
+
     async def init_db(self):
         async with aiosqlite.connect(self.db_path) as db:
             await db.execute('''
@@ -39,8 +49,6 @@ class Database:
                     amount_btc REAL,
                     btc_address TEXT NOT NULL,
                     rate REAL NOT NULL,
-                    processing_fee REAL NOT NULL,
-                    admin_fee REAL NOT NULL,
                     total_amount REAL NOT NULL,
                     payment_type TEXT NOT NULL,
                     status TEXT DEFAULT 'waiting',
@@ -133,18 +141,25 @@ class Database:
             await db.execute(f'UPDATE users SET {fields} WHERE user_id = ?', values)
             await db.commit()
 
+
+
+
+
+
     async def create_order(self, user_id: int, amount_rub: float, amount_btc: float,
-                          btc_address: str, rate: float, processing_fee: float,
-                          admin_fee: float, total_amount: float, payment_type: str) -> int:
+                        btc_address: str, rate: float, total_amount: float, payment_type: str) -> int:
         async with aiosqlite.connect(self.db_path) as db:
             cursor = await db.execute('''
-                INSERT INTO orders (user_id, amount_rub, amount_btc, btc_address, rate,
-                                  processing_fee, admin_fee, total_amount, payment_type)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (user_id, amount_rub, amount_btc, btc_address, rate,
-                  processing_fee, admin_fee, total_amount, payment_type))
+                INSERT INTO orders (user_id, amount_rub, amount_btc, btc_address, rate, total_amount, payment_type)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', (user_id, amount_rub, amount_btc, btc_address, rate, total_amount, payment_type))
             await db.commit()
             return cursor.lastrowid
+
+
+
+
+
 
     async def get_order(self, order_id: int) -> Optional[Dict]:
         async with aiosqlite.connect(self.db_path) as db:
